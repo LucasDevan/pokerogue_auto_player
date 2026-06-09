@@ -16,137 +16,13 @@ pip install pyautogui pynput pillow
 import time
 import pyautogui
 from pynput import keyboard
-from enum import Enum
+from gameState import GameState
+from pokemon import Pokemon
+from color import Color
 
 # =========================
 # CONFIG
 # =========================
-
-
-class PokemonStatus(Enum):
-    """Enumeration for Pokemon status"""
-    POISSONED = "poissoned"
-    PARALYZED = "paralyzed"
-    SLEEPING = "sleeping"
-    NONE = "NONE"
-
-class GameState(Enum):
-    """Enumeration for possible game states"""
-    MENU = "menu"
-    BATTLE = "battle"
-    MENU_KO = "menu ko"
-    UNKNOWN = "unknown"
-
-class Types(Enum):
-    """Enumeration for Pokemon types"""
-    FIRE = "fire"
-    WATER = "water"
-    GRASS = "grass"
-    ELECTRIC = "electric"
-    NORMAL = "normal"
-    STEEL = "steel"
-    FIGHTING = "fighting"
-    STONE = "stone"
-    FAIRY = "fairy"
-    DRAGON = "dragon"
-    DARK  = "dark"
-    GHOST = "ghost"
-    PSYCHIC = "psychic"
-    GROUND = "ground"
-    FLYING = "flying"
-    POISON = "poison"
-    ICE = "ice"
-    INSECT = "insect"
-
-class Move:
-    """Class representing a Pokemon move"""
-    def __init__(self, name, move_type, power):
-        self.__name = name
-        self.__move_type = move_type
-        self.__power = power
-
-    def get_name(self):
-        return self.__name
-    
-    def get_type(self):
-        return self.__move_type
-    
-    def get_power(self):
-        return self.__power
-    
-class Pokemon:
-    """Class representing a Pokemon"""
-    def __init__(self, name : str, pokemon_type_1 : Types, pokemon_type_2 : Types, hp : int, attack : int, defence : int, special_attack : int, special_defence : int, speed : int, moves : tuple, status : PokemonStatus = PokemonStatus.NONE):
-        self.__name = name
-        self.__type_1 = pokemon_type_1
-        self.__type_2 = pokemon_type_2  
-        self.__max_hp = hp
-        self.__attack = attack
-        self.__special_attack =  special_attack
-        self.__special_defence = special_defence
-        self.__defence = defence
-        self.__speed =speed
-        if(len(moves) > 4):
-            moves = {moves[0],moves[1],moves[2],moves[3]}
-        self.__moves = moves
-        self.__status = status
-        self.__is_confused = False
-
-    def get_name(self) -> str:
-        return self.__name
-    
-    def get_types(self) -> tuple:
-        return (self.__type_1, self.__type_2)
-    
-    def get_type_1(self) -> Types:
-        return self.__type_1
-    
-    def get_type_2(self) -> Types:
-        return self.__type_2
-    
-    def get_hp(self) -> int:
-        return self.__max_hp
-    
-    def get_moves(self) -> tuple:
-        return self.__moves
-    
-    def get_move(self,index : int) -> Move:
-        return self.__moves[index]
-    
-    def get_attack(self) -> int:
-        return self.__attack
-    
-    def get_defence(self) -> int:
-        return self.__defence
-    
-    def get_special_attack(self) -> int: 
-        return self.__special_attack
-    
-    def get_special_defence(self) -> int:
-        return self.__special_defence
-    
-    def get_speed(self) -> int:
-        return self.__speed
-    
-    def get_status(self) -> PokemonStatus:
-        return self.__status
-    
-    def is_confused(self) -> bool:
-        return self.__is_confused
-    
-    def set_is_confused(self, confused : bool):
-        self.__is_confused = confused
-    
-    def set_status(self, status : PokemonStatus):
-        self.__status = status
-
-    def level_up(self,hp_increase = 0, attack_increase = 0, defence_increase = 0, special_attack_increase = 0, special_defence_increase = 0, speed_increase = 0):
-        self.__max_hp += hp_increase
-        self.__attack += attack_increase
-        self.__defence += defence_increase
-        self.__special_attack += special_attack_increase
-        self.__special_defence += special_defence_increase
-        self.__speed += speed_increase  
 
 SCAN_INTERVAL = 0.5
 
@@ -161,17 +37,15 @@ REGION_POKEMON_1_MENU = (564, 429, 30, 30)
 REGION_POKEMON_2_MENU = (600, 900, 30, 30)
 REGION_MONEY = (656, 976, 30, 30)
 
-# RGB reference values - now as lists of target colors
-MENU_BACKGROUND_COLORS = [(16, 24, 32)]
-BOX_OUTLINE_COLORS = [(199, 54, 37)]
-BACK_GROUND_COLORS = [(54, 45, 62)]
-POKEMON_KO_COLORS = [(91, 33, 31)]
-POKEMON_KO_SELECTED_COLORS = [(145, 11, 66)]
-POKEMON_ALIVE_COLORS = [(11, 35, 59)]
-MONEY_COLORS = [(232, 232, 168), (160, 160, 96)]
+# RGB reference values - using Color class instances
+MENU_BACKGROUND_COLORS = [Color(16, 24, 32)]
+BOX_OUTLINE_COLORS = [Color(199, 54, 37)]
+BACK_GROUND_COLORS = [Color(54, 45, 62)]
+POKEMON_KO_COLORS = [Color(91, 33, 31)]
+POKEMON_KO_SELECTED_COLORS = [Color(145, 11, 66)]
+POKEMON_ALIVE_COLORS = [Color(11, 35, 59)]
+MONEY_COLORS = [Color(232, 232, 168), Color(160, 160, 96)]
 
-# Allowed color difference
-COLOR_TOLERANCE = 10
 
 # Number of sample points to check in a region (grid)
 SAMPLE_GRID_SIZE = 3  # Will sample 3x3 grid = 9 points per region
@@ -189,12 +63,6 @@ pyautogui.FAILSAFE = True
 # =========================
 # HELPERS
 # =========================
-
-def color_close(c1, c2, tolerance):
-    """
-    Compare two RGB colors with tolerance.
-    """
-    return all(abs(a - b) <= tolerance for a, b in zip(c1, c2))
 
 
 def get_region_pixels(x, y, width, height, grid_size=3):
@@ -230,7 +98,7 @@ def region_matches_any_color(x, y, width, height, target_colors, grid_size=3):
     
     for _, _, pixel_color in sampled_pixels:
         for target_color in target_colors:
-            if color_close(pixel_color, target_color, COLOR_TOLERANCE):
+            if pixel_color.are_close(target_color):
                 print(f"  Region ({x},{y}): Found matching color {pixel_color} ≈ {target_color}")
                 return True
     
