@@ -1,4 +1,4 @@
-from types import Types
+from pokemonTypes import Types, Enum
 
 class Move:
     """Class representing a Pokemon move"""

@@ -1,6 +1,4 @@
-from enum import Enum
-from moves import Move
-from types import Types
+from moves import Move, Types, Enum
 
 class PokemonStatus(Enum):
     """Enumeration for Pokemon status"""

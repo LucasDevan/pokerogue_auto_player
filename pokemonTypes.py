@@ -1,5 +1,5 @@
 from color import Color
-
+from enum import Enum
 
 class Types(Enum):
     """Enumeration for Pokemon types"""
