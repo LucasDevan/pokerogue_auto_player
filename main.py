@@ -13,7 +13,6 @@ Requirements:
 pip install pyautogui pynput pillow
 """
 
-import random
 import time
 import pyautogui
 from pynput import keyboard
@@ -41,6 +40,7 @@ REGION_POKEMON_1_MENU = (564, 429, 15, 15)
 REGION_POKEMON_2_MENU = (600, 900, 15, 15)
 REGION_MONEY = (500, 960, 25, 15)
 REGION_PP_LEFT = (2400,1233,20,10)
+REGION_MOVE_SELECTION = (10,14,20,10)
 
 # RGB reference values - using Color class instances
 MENU_BACKGROUND_COLORS = [Color(16, 24, 32)]
@@ -50,6 +50,7 @@ POKEMON_KO_COLORS = [Color(91, 33, 31)]
 POKEMON_KO_SELECTED_COLORS = [Color(145, 11, 66)]
 POKEMON_ALIVE_COLORS = [Color(11, 35, 59)]
 MONEY_COLORS = [Color(232, 232, 168), Color(160, 160, 96)]
+MOVE_SELECTION_COLORS = [Color(41, 198, 173)]
 
 SUPER_EFFECTIVE_COLORS = [Color(75, 180, 0),Color(72, 155, 5)]
 EFFECTIVE_COLORS = [Color(248, 248, 248)]
@@ -172,6 +173,9 @@ def detect_state():
         print("Detected: SHOP state")
         return GameState.SHOP   
 
+    if region_matches_any_color(*REGION_MOVE_SELECTION,MOVE_SELECTION_COLORS):
+        return GameState.LEARNING_MOVE   
+
     # Check if we're in battle
     if region_matches_any_color(*REGION_BOX_BATTLE, BOX_OUTLINE_COLORS + BACK_GROUND_COLORS):
         if region_matches_any_color(*ENNEMY_POKEMON_1_STATUS_WINDOW,BACK_GROUND_COLORS) and region_matches_any_color(*ENNEMY_POKEMON_2_STATUS_WINDOW,BACK_GROUND_COLORS):
@@ -274,13 +278,17 @@ def handle_menu_ko():
     time.sleep(0.1)
     pyautogui.press("enter")
 
-
 def handle_shop():
     print("[SHOP] Pressing Enter")
     pyautogui.press("x")
     time.sleep(0.4)
     pyautogui.press("enter")
 
+def handle_learning_move():
+    pyautogui.press("x")
+    time.sleep(0.1)
+    pyautogui.press("enter")
+    time.sleep(0.1)
 
 # =========================
 # KEYBOARD CONTROLS
@@ -291,7 +299,6 @@ def on_press(key):
     global PROGRAM_IS_RUNNING
 
     try:
-
         # START / RESUME
         if key == keyboard.Key.f8:
             if not AUTOPLAYER_IS_PLAYING:
@@ -352,6 +359,9 @@ while PROGRAM_IS_RUNNING:
 
         elif state == GameState.SHOP:
             handle_shop()
+
+        elif state == GameState.LEARNING_MOVE:
+            handle_learning_move()
 
         else:
             print("[UNKNOWN] Doing nothing")
